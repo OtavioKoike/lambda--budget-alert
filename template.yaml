@@ -1,41 +1,84 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: >
-  lambda--budget-alert
-
-  Sample SAM Template for lambda--budget-alert
-
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
-Globals:
-  Function:
-    Timeout: 3
 
 Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  LambdaBudgetAlertRole:
+    Type: AWS::IAM::Role
     Properties:
-      CodeUri: hello_world/
+      RoleName: role--budget-alert
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: PolicyBudgetAlert
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Subscribe
+                  - sns:ReceiveMessage
+                Resource: !Sub "arn:aws:sns:us-east-2:${AWS::AccountId}:topic--budget-alert"
+              - Effect: Allow
+                Action:
+                  - ce:GetCostAndUsage
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeInstances
+                  - ec2:StopInstances
+                  - rds:DescribeDBInstances
+                  - rds:StopDBInstance
+                  - dynamodb:DescribeTable
+                  - dynamodb:UpdateContinuousBackups
+                  - elasticache:DescribeCacheClusters
+                  - elasticache:DeleteCacheCluster
+                  - lambda:GetFunctionConfiguration
+                  - lambda:UpdateFunctionConfiguration
+                  - apigateway:GetRestApis
+                  - apigateway:DeleteRestApi
+                Resource: "*"
+      Tags:
+        - Key: CostCenter
+          Value: Financeiro
+        - Key: Service
+          Value: BudgetAlert
+        - Key: Owner
+          Value: OtavioKoike
+
+  LambdaBudgetAlertFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: lambda--budget-alert
       Handler: app.lambda_handler
       Runtime: python3.13
-      Architectures:
-        - x86_64
+      Role: !GetAtt LambdaBudgetAlertRole.Arn
+      CodeUri:
+        Bucket: !Sub "${AWS::AccountId}--serverless-deployments"
+        Key: "lambda_budget_alert.zip"
       Events:
-        HelloWorld:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+        SNSBudgetAlert:
+          Type: SNS
           Properties:
-            Path: /hello
-            Method: get
+            Topic: !Sub "arn:aws:sns:us-east-2:${AWS::AccountId}:topic--budget-alert"
+        ScheduledExecution:
+          Type: Schedule
+          Properties:
+            Schedule: "cron(0 6,14,22 * * ? *)"
 
-Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldApi:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  HelloWorldFunction:
-    Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt HelloWorldFunctionRole.Arn
+  LambdaBudgetAlertPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref LambdaBudgetAlertFunction
+      Principal: 'sns.amazonaws.com'
+      SourceArn: !Sub "arn:aws:sns:us-east-2:${AWS::AccountId}:topic--budget-alert"
+
+  LambdaBudgetAlertSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: lambda
+      Endpoint: !GetAtt LambdaBudgetAlertFunction.Arn
+      TopicArn: !Sub "arn:aws:sns:us-east-2:${AWS::AccountId}:topic--budget-alert"
