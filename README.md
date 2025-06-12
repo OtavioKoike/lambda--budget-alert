@@ -3,7 +3,7 @@
 Afim de não ter problemas de cobranças elevadas na AWS, esse projeto contém todo um ecossistema responsavel por monitorar o Budget da conta AWS e intervir nos serviços com gastos elevados, podendo desligar, diminuir, migrar ou tomar alguma outra ação que busque diminuir o valor previsto.
 
 <div align="center">
-  <img src="docs\fluxograma.png" alt="Fluxograma"/>
+  <img src="docs\images\fluxograma.png" alt="Fluxograma"/>
 </div>
 
 Com esse projeto, 90% da estrutura será criado diretamente na conta e funcional desde o primeiro deploy. Os passos manuais serão descritos no tópico de <b>Açoes Manuais</b>.
@@ -37,7 +37,7 @@ Para compilar e implantar seu aplicativo pela primeira vez, execute o seguinte n
 ```bash
 sam init
 sam build
-sam deploy --guided --capabilities CAPABILITY_NAMED_IAM --profile deployment
+sam deploy --guided --capabilities CAPABILITY_NAMED_IAM
 ```
 
 O primeiro comando iniciará o SAM local com algumas configurações iniciais. <br>O segundo comando criará o código-fonte do seu aplicativo. <br>O terceiro comando empacotará e implantará seu aplicativo na AWS, com uma série de prompts:
@@ -48,12 +48,20 @@ O primeiro comando iniciará o SAM local com algumas configurações iniciais. <
 * **Permitir criação de função IAM da CLI do SAM**: Muitos modelos do AWS SAM, incluindo este exemplo, criam funções IAM da AWS necessárias para que as funções do AWS Lambda incluídas acessem os serviços da AWS. Por padrão, elas são limitadas às permissões mínimas necessárias. Para implantar uma pilha do AWS CloudFormation que cria ou modifica funções IAM, o valor `CAPABILITY_IAM` para `capabilities` deve ser fornecido. Se a permissão não for fornecida por meio deste prompt, para implantar este exemplo, você deverá passar explicitamente `--capabilities CAPABILITY_IAM` para o comando `sam deploy`.
 * **Salvar argumentos em samconfig.toml**: Se definido como sim, suas escolhas serão salvas em um arquivo de configuração dentro do projeto, para que, no futuro, você possa executar `sam deploy` novamente sem parâmetros para implantar as alterações em seu aplicativo.
 
+<div align="center">
+  <img src="docs\images\success.png" alt="Sucesso"/>
+</div>
+
 Para fazer o deploy do seu pacote, execute o seguinte no shell:
 
 ```bash
 Compress-Archive -Path app.py, requirements.txt, __init__.py -DestinationPath lambda_budget_alert.zip
-aws s3 cp lambda_budget_alert.zip s3://<SEU_BUCKET>/lambda_budget_alert.zip
+aws s3 cp lambda_budget_alert.zip s3://<SUA_CONTA>--serverless-deployments/lambda_budget_alert.zip
 ```
+
+## Ações Manuais
+
+Após a criação do ecossistema, no serviço do AWS Budget, é preciso configurar os alertas necessarios de acordo com suas prioridades e configurar para enviar uma notificação ao SNS 'topic-bugdet-alert'.
 
 ## Delete
 

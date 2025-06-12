@@ -2,6 +2,49 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 
 Resources:
+  TopicBudgetAlert:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: topic--budget-alert
+      Tags:
+        - Key: CostCenter
+          Value: Financeiro
+        - Key: Service
+          Value: BudgetAlert
+        - Key: Owner
+          Value: OtavioKoike
+  
+  TopicBudgetAlertPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref TopicBudgetAlert
+      PolicyDocument:
+        Version: "2008-10-17"
+        Id: "PolicyTopicBudgetAlert"
+        Statement:
+          - Sid: "AllowPublishByBudgets"
+            Effect: Allow
+            Principal:
+              Service: budgets.amazonaws.com
+            Action: SNS:Publish
+            Resource: !Ref TopicBudgetAlert
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Sub "${AWS::AccountId}"
+          - Sid: "AllowSubscribe"
+            Effect: Allow
+            Principal:
+              AWS: "*"
+            Action:
+              - SNS:ListSubscriptionsByTopic
+              - SNS:GetTopicAttributes
+              - SNS:Subscribe
+            Resource: !Ref TopicBudgetAlert
+            Condition:
+              StringEquals:
+                AWS:SourceAccount: !Sub "${AWS::AccountId}"
+                
   LambdaBudgetAlertRole:
     Type: AWS::IAM::Role
     Properties:
@@ -20,7 +63,7 @@ Resources:
                 Action:
                   - sns:Subscribe
                   - sns:ReceiveMessage
-                Resource: !Sub "arn:aws:sns:us-east-2:${AWS::AccountId}:topic--budget-alert"
+                Resource: !Ref TopicBudgetAlert
               - Effect: Allow
                 Action:
                   - ce:GetCostAndUsage
@@ -62,11 +105,11 @@ Resources:
         SNSBudgetAlert:
           Type: SNS
           Properties:
-            Topic: !Sub "arn:aws:sns:us-east-2:${AWS::AccountId}:topic--budget-alert"
+            Topic: !Ref TopicBudgetAlert
         ScheduledExecution:
           Type: Schedule
           Properties:
-            Schedule: "cron(0 6,14,22 * * ? *)"
+            Schedule: "cron(0 1,9,17 * * ? *)"
 
   LambdaBudgetAlertPermission:
     Type: AWS::Lambda::Permission
@@ -74,11 +117,11 @@ Resources:
       Action: 'lambda:InvokeFunction'
       FunctionName: !Ref LambdaBudgetAlertFunction
       Principal: 'sns.amazonaws.com'
-      SourceArn: !Sub "arn:aws:sns:us-east-2:${AWS::AccountId}:topic--budget-alert"
+      SourceArn: !Ref TopicBudgetAlert
 
   LambdaBudgetAlertSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: lambda
       Endpoint: !GetAtt LambdaBudgetAlertFunction.Arn
-      TopicArn: !Sub "arn:aws:sns:us-east-2:${AWS::AccountId}:topic--budget-alert"
+      TopicArn: !Ref TopicBudgetAlert
