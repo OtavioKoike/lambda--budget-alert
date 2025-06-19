@@ -1,42 +1,52 @@
 import json
+import logging
 
-# import requests
-
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
-    """Sample pure Lambda function
+    try:
+        # Extrai a mensagem SNS
+        sns_message = event['Records'][0]['Sns']['Message']
+        logger.info(f"Mensagem SNS recebida: {sns_message}")
 
-    Parameters
-    ----------
-    event: dict, required
-        API Gateway Lambda Proxy Input Format
+        # Converte string JSON em dicionário
+        alerta = json.loads(sns_message)
+        
+        # Extrai dados principais
+        nome_orcamento = alerta.get("budgetName", "Desconhecido")
+        tipo_alerta = alerta.get("alertType")
+        threshold = alerta.get("alertThreshold")
+        estado = alerta.get("alertState")
+        periodo_inicio = alerta.get("timePeriodStart")
+        periodo_fim = alerta.get("timePeriodEnd")
 
-        Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
+        logger.info(f"🧾 Alerta do orçamento: {nome_orcamento}")
+        logger.info(f"Tipo: {tipo_alerta} | Threshold: {threshold}% | Estado: {estado}")
+        logger.info(f"Período: {periodo_inicio} até {periodo_fim}")
+        
+        # Trata alertas reais ou previstos
+        if tipo_alerta == "ACTUAL":
+            gasto_real = alerta.get("actualSpend", {}).get("amount", "0")
+            logger.warning(f"⚠️ Gasto REAL atingiu: U${gasto_real}")
+            # Aqui você pode automatizar ações como desligar recursos, se necessário
 
-    context: object, required
-        Lambda Context runtime methods and attributes
+        elif tipo_alerta == "FORECASTED":
+            gasto_previsto = alerta.get("forecastedSpend", {}).get("amount", "0")
+            logger.warning(f"🔮 Gasto PREVISTO excederá: U${gasto_previsto}")
+            # Aqui também dá para antecipar ações preventivas
 
-        Context doc: https://docs.aws.amazon.com/lambda/latest/dg/python-context-object.html
+        else:
+            logger.error("Tipo de alerta desconhecido. Nenhuma ação tomada.")
 
-    Returns
-    ------
-    API Gateway Lambda Proxy Output Format: dict
+        return {
+            'statusCode': 200,
+            'body': json.dumps('Processamento concluído com sucesso!')
+        }
 
-        Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
-    """
-
-    # try:
-    #     ip = requests.get("http://checkip.amazonaws.com/")
-    # except requests.RequestException as e:
-    #     # Send some context about this error to Lambda Logs
-    #     print(e)
-
-    #     raise e
-
-    return {
-        "statusCode": 200,
-        "body": json.dumps({
-            "message": "hello world",
-            # "location": ip.text.replace("\n", "")
-        }),
-    }
+    except Exception as e:
+        logger.exception("Erro durante o processamento do alerta.")
+        return {
+            'statusCode': 500,
+            'body': json.dumps(f'Erro: {str(e)}')
+        }

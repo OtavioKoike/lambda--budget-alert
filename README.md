@@ -32,14 +32,19 @@ Para usar a CLI da SAM, você precisa das seguintes ferramentas.
 
 ## Deploy
 
-Para fazer o deploy do seu pacote, execute o seguinte no shell:
+Para fazer o deploy do seu pacote, na raiz do projeto, execute o seguinte no shell:
 
 ```bash
-Compress-Archive -Path app.py, src/ requirements.txt, __init__.py -DestinationPath lambda_budget_alert.zip
-aws s3 cp lambda_budget_alert.zip s3://<SUA_CONTA>--serverless-deployments/lambda_budget_alert.zip
+Remove-Item 'lambda_budget_alert.zip'
+Compress-Archive -Path app.py, src/, requirements.txt, __init__.py -DestinationPath lambda_budget_alert.zip
+
+aws s3 cp lambda_budget_alert.zip s3://<SUA_CONTA>--serverless-deployments/lambda_budget_alert.zip --profile deployment
+aws lambda update-function-code --function-name lambda--budget-alert --s3-bucket <SUA_CONTA>--serverless-deployments --s3-key lambda_budget_alert.zip --profile deployment
 ```
 
 Com os comandos acima, voce criará o pacote zip dos componentes da sua aplicação e copiará para o bucket <SUA_CONTA>--serverless-deployments, o qual será apontado durante o deploy.
+
+Obs.: O profile deve ser de acordo com suas credenciais, caso seja default, não é necessario informar
 
 Para compilar e implantar sua aplicação pela primeira vez, execute o seguinte no shell:
 
@@ -67,8 +72,12 @@ Após a criação do ecossistema, vá até o serviço do AWS Budget. Nele é pre
 
 ## Delete
 
-Para excluir o aplicativo de exemplo que você criou, use a CLI da AWS. Supondo que você tenha usado o nome do seu projeto como nome da pilha, você pode executar o seguinte:
+Para excluir a aplicação e as dependencias, use a CLI da AWS. Supondo que você tenha usado o nome do seu projeto como nome da pilha, você pode executar o seguinte:
 
 ```bash
 sam delete --stack-name "lambda--budget-alert"
 ```
+
+## Documentações
+Segue documentações da AWS que podem agregar junto do projeto:
+* [Gerenciando seus custos com AWS orçamentos](https://docs.aws.amazon.com/pt_br/cost-management/latest/userguide/budgets-managing-costs.html)
