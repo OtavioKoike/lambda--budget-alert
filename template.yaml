@@ -2,6 +2,8 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 
 Resources:
+  # SNS Topic for Budget Alerts
+  # This topic will be used by AWS Budgets to send notifications when budget thresholds are exceeded
   TopicBudgetAlert:
     Type: AWS::SNS::Topic
     Properties:
@@ -44,7 +46,9 @@ Resources:
             Condition:
               StringEquals:
                 AWS:SourceAccount: !Sub "${AWS::AccountId}"
-                
+
+  # Lambda Function for Budget Alerts
+  # This function will be triggered by the SNS topic when budget thresholds are exceeded 
   LambdaBudgetAlertRole:
     Type: AWS::IAM::Role
     Properties:
@@ -56,7 +60,16 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: PolicyBudgetAlert
+        - PolicyName: PolicyBudgetAlertLogs
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/lambda--budget-alert:*
+        - PolicyName: PolicyBudgetAlertSNS
           PolicyDocument:
             Statement:
               - Effect: Allow
@@ -64,10 +77,16 @@ Resources:
                   - sns:Subscribe
                   - sns:ReceiveMessage
                 Resource: !Ref TopicBudgetAlert
+        - PolicyName: PolicyBudgetAlertCostExplorer
+          PolicyDocument:
+            Statement:
               - Effect: Allow
                 Action:
                   - ce:GetCostAndUsage
                 Resource: "*"
+        - PolicyName: PolicyBudgetAlertResources
+          PolicyDocument:
+            Statement:
               - Effect: Allow
                 Action:
                   - ec2:DescribeInstances
@@ -106,10 +125,10 @@ Resources:
           Type: SNS
           Properties:
             Topic: !Ref TopicBudgetAlert
-        ScheduledExecution:
-          Type: Schedule
-          Properties:
-            Schedule: "cron(0 1,9,17 * * ? *)"
+      Tags:
+        CostCenter: Financeiro
+        Service: BudgetAlert
+        Owner: OtavioKoike
 
   LambdaBudgetAlertPermission:
     Type: AWS::Lambda::Permission
