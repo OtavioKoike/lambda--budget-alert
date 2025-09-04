@@ -1,0 +1,16 @@
+{
+  "budgetName": "Orçamento Free Tier",
+  "budgetLimit": {
+    "amount": "1",
+    "unit": "USD"
+  },
+  "alertThreshold": 85.0,
+  "alertType": "ACTUAL",
+  "alertState": "ALARM",
+  "actualSpend": {
+    "amount": "0.87",
+    "unit": "USD"
+  },
+  "timePeriodStart": "2025-06-01T00:00:00Z",
+  "timePeriodEnd": "2025-06-30T23:59:59Z"
+}

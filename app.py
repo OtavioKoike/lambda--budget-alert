@@ -1,8 +1,11 @@
 import json
 import logging
 
+from src.services.cost_explorer_service import CostExplorerService
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
 
 def lambda_handler(event, context):
     try:
@@ -38,6 +41,19 @@ def lambda_handler(event, context):
 
         else:
             logger.error("Tipo de alerta desconhecido. Nenhuma ação tomada.")
+
+        ce_service = CostExplorerService()
+
+        total = ce_service.consultar_gasto_total_mensal()
+        print(f"Gasto total no mês: U${total:.2f}")
+
+        detalhado = ce_service.consultar_por_servico()
+        for item in detalhado:
+            print(f"{item['servico']}: U${item['valor']:.2f}")
+
+        resultados = ce_service.consultar_por_tag("Project")
+        for item in resultados:
+            print(f"Projeto: {item['tag']} — U${item['valor']:.2f}")
 
         return {
             'statusCode': 200,

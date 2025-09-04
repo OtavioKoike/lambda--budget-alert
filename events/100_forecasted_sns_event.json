@@ -1,0 +1,22 @@
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventVersion": "1.0",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:123456789012:topic--budget-alert:abc456",
+      "Sns": {
+        "Type": "Notification",
+        "MessageId": "msg-forecasted-100pct",
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:topic--budget-alert",
+        "Subject": null,
+        "Message": "{\n  \"budgetName\": \"Orçamento Free Tier\",\n  \"budgetLimit\": {\n    \"amount\": \"1\",\n    \"unit\": \"USD\"\n  },\n  \"alertThreshold\": 100.0,\n  \"alertType\": \"FORECASTED\",\n  \"alertState\": \"ALARM\",\n  \"forecastedSpend\": {\n    \"amount\": \"1.14\",\n    \"unit\": \"USD\"\n  },\n  \"timePeriodStart\": \"2025-06-01T00:00:00Z\",\n  \"timePeriodEnd\": \"2025-06-30T23:59:59Z\"\n}",
+        "Timestamp": "2025-06-19T17:50:00Z",
+        "SignatureVersion": "1",
+        "Signature": "EXAMPLE",
+        "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService.pem",
+        "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=...",
+        "MessageAttributes": {}
+      }
+    }
+  ]
+}
